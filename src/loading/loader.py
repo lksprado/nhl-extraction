@@ -78,33 +78,46 @@ class Loader:
         buffer = io.StringIO()
 
         with input_path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+            raw_text = f.read()
 
-        # CASO 1 — array no root
+        try:
+            data = json.loads(raw_text)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in file {input_path}: {e}")
+
         if isinstance(data, list):
             iterable = data
-
-        # CASO 2 — array dentro de uma chave
         elif isinstance(data, dict) and array_key:
             if array_key not in data or not isinstance(data[array_key], list):
                 raise ValueError(f"array_key '{array_key}' not found or it is not list of dicts")
             iterable = data[array_key]
-
-        # CASO 3 — objeto único
         else:
             iterable = [data]
 
-        for item in iterable:
-            buffer.write(
-                json.dumps(item, ensure_ascii=False)
-                + "\t"
-                + source_filename
-                + "\n"
+        for idx, item in enumerate(iterable, start=1):
+            try:
+                # Gera JSON compactado
+                json_text = json.dumps(item, ensure_ascii=False, separators=(',', ':'))
+                json.loads(json_text)  # validação
+            except Exception as e:
+                raise ValueError(
+                    f"Invalid JSON payload in file {input_path} "
+                    f"(record {idx}): {e}"
+                )
+
+            # Escape para TEXT format do PostgreSQL
+            escaped = (
+                json_text
+                .replace("\\", "\\\\")  # \ → \\
+                .replace("\n", "\\n")   # newline → \n
+                .replace("\r", "\\r")   # CR → \r
+                .replace("\t", "\\t")   # tab → \t
             )
+            
+            buffer.write(f"{escaped}\t{source_filename}\n")
 
         buffer.seek(0)
         return buffer
-
 
     # ------------------------
     # COPY
@@ -114,7 +127,7 @@ class Loader:
         COPY {config.schema}.{config.table_name} (payload, source_filename)
         FROM STDIN WITH (FORMAT text)
         """
-
+        
         with self._get_connection() as conn, conn.cursor() as cur:
             cur.copy_expert(copy_sql, buffer)
             conn.commit()
@@ -171,7 +184,6 @@ class Loader:
         
         ingested = self._load_ingested_filenames(config)
         
-        
         new_files = [
             p for p in filepaths
             if p.name not in ingested
@@ -197,7 +209,6 @@ class Loader:
                     """,
                     buffer
                 )
-
 
                 self._register_ingestion_conn(cur, config, filepath.name)
 
