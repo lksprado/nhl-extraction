@@ -1,11 +1,10 @@
 from src.extraction.controller import get_data_from_db
 from src.extraction.extraction import Extractor
 from endpoints import *
-from config import get_local_crendentials
-from src.loading.loader import Loader
 from time import perf_counter
 import sqlalchemy
-from itertools import islice
+
+
 ###################################################################
 ## EXTRACTION
 ###################################################################
@@ -79,7 +78,9 @@ def all_club_stats_extraction():
       
       print(f"Extração: {i} de {total}")
 
-      url = config.url.format(
+
+      
+      url = config.build_url(
           team_id=team_id,
           season_id=season_id,
           game_type_id=game_type_id
@@ -87,7 +88,7 @@ def all_club_stats_extraction():
       
       data = extractor.make_request(url=url)
 
-      filename = config.filename.format(
+      filename = config.build_filename(
           team_id=team_id,
           season_id=season_id,
           game_type_id=game_type_id
@@ -126,86 +127,77 @@ def all_players_extraction():
   
   print(f"Completed in {perf_counter() - start:2f}s")
 
-###################################################################
-## LOADING
-###################################################################
-
-def all_games_details_loading(*, test_mode: bool = False):
-  """
-  CONTEM DETALHES DO JOGO COM JOGADORES
-  """
-  config = get_all_games_details_endpoint()
-  creds = get_local_crendentials()
-  
-  loader = Loader(**creds)
-  
-  files = list(config.output_dir.glob("raw_*_details.json"))
-
-  if test_mode:
-      loader.logger.info("Running in TEST MODE")
-      files = files[:3]
-  
-  loader.load_files(config, files)
-
-def all_games_summary_details_loading(*, test_mode: bool = False):
+def all_games_gamelog_extraction():
   """
   CONTEM DETALHES DO JOGO
   """
-  config = get_all_games_summary_details_endpoint()
-  creds = get_local_crendentials()
+  extractor = Extractor()
   
-  loader = Loader(**creds)
+  engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
+  table_name = 'vw_stg_request_players_seasons_gametypes_id'
   
-  files = list(config.output_dir.glob("raw_*_summary_details.json"))
-  
-  if test_mode:
-      loader.logger.info("Running in TEST MODE")
-      files = files[:3]
+  config = get_all_players_gamelog_endpoint()
+  rows = get_data_from_db(engine=engine,table=table_name, cols=['player_id', 'season_id','game_type_id'], return_as= 'tuples')
 
-  loader.load_files(config, files)
+  total = len(rows)
+  start = perf_counter()
 
-def all_club_stats_loading(*, test_mode: bool = False):
+  for i, (player_id, season_id, game_type_id) in enumerate(rows, start=1):
+      
+      print(f"Extração: {i} de {total}")
+
+      url = config.build_url(
+          player_id=player_id,
+          season_id=season_id,
+          game_type_id=game_type_id
+      )
+      
+      data = extractor.make_request(url=url)
+
+      filename = config.build_filename(
+          player_id=player_id,
+          season_id=season_id,
+          game_type_id=game_type_id
+      )
+
+      extractor.save_json(
+          data=data,
+          output_dir=config.output_dir,
+          filename=filename
+      )
+
+  print(f"Completed in {perf_counter() - start:.2f}s")
+
+def all_games_play_by_play_extraction():
   """
   CONTEM DETALHES DO JOGO
   """
-  config = get_all_club_stats_endpoint()
-  creds = get_local_crendentials()
+  extractor = Extractor()
   
-  loader = Loader(**creds)
+  engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
+  table_name = 'vw_stg_request_games_id'
   
-  files = list(config.output_dir.glob("raw_stats_club_*_*_*.json"))
-  
-  if test_mode:
-      loader.logger.info("Running in TEST MODE")
-      files = files[:3]
+  config = get_all_games_play_by_play_endpoint()
+  games = get_data_from_db(engine=engine,table=table_name, cols=['game_id'], bool_filter=("has_play_by_play",False))
 
-  loader.load_files(config, files)
-
-
-def all_players_loading(*, test_mode: bool = False):
-  """
-  CONTEM DETALHES DO JOGO
-  """
-  config = get_all_players_endpoint()
-  creds = get_local_crendentials()
+  total = len(games)
+  games_num = 1
+  start = perf_counter()
   
-  loader = Loader(**creds)
+  for game in games:
+    print(f"Extração: {games_num} de {total}")
+    url = f"https://api-web.nhle.com/v1/gamecenter/{game}/play-by-play"
+    data = extractor.make_request(url=url)
+    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.build_filename(game_id=game))
+    games_num +=1
   
-  files = list(config.output_dir.glob("player_*_info.json"))
-  
-  if test_mode:
-      loader.logger.info("Running in TEST MODE")
-      files = files[:3]
-
-  loader.load_files(config, files)
+  print(f"Completed in {perf_counter() - start:2f}s")
 
 
 if __name__ == '__main__':
   # all_games_details_extraction()
   # all_games_summary_details_extraction()
-  # all_games_summary_details_loading()
-  # all_games_details_loading()
-  # all_club_stats_loading()
   # all_players_extraction()
-  all_players_loading()
+  # all_gamelog_extraction()
+  # all_games_play_by_play_extraction()
   pass

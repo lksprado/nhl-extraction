@@ -10,7 +10,7 @@ class EndpointConfig:
     filename: str
     output_dir: Path
     table_name: str
-    load_mode: Literal["append", "overwrite"] = "append"
+    is_overwrite: bool = False
     schema: str = 'raw'
     array_key: Optional[str] = None 
 
@@ -35,7 +35,7 @@ def get_all_seasons_id_endpoint() -> EndpointConfig:
       filename="all_season_ids.json",
       output_dir=output_path,
       table_name="nhl_raw_all_seasons_id",
-      load_mode='overwrite'
+      is_overwrite=True
   )
 
 def get_all_teams_id_endpoint() -> EndpointConfig:
@@ -48,7 +48,7 @@ def get_all_teams_id_endpoint() -> EndpointConfig:
       output_dir=output_path,
       array_key='data',
       table_name="nhl_raw_all_teams_id",
-      load_mode='overwrite'
+      is_overwrite=True
   )
 
 def get_all_games_summary_endpoint() -> EndpointConfig:
@@ -62,7 +62,7 @@ def get_all_games_summary_endpoint() -> EndpointConfig:
     output_dir=output_path,
     array_key="data",
     table_name="nhl_raw_all_games_summary",
-    load_mode='overwrite'
+    is_overwrite=True
   )
 
 ## DYNAMIC ################################################################################
@@ -80,7 +80,7 @@ def get_all_games_details_endpoint() -> EndpointConfig:
     filename="raw_{game_id}_details.json",
     output_dir=output_path,
     table_name="nhl_raw_all_games_details",
-    load_mode='append'
+    is_overwrite=False
   )
 
 def get_all_games_summary_details_endpoint() -> EndpointConfig:
@@ -96,7 +96,7 @@ def get_all_games_summary_details_endpoint() -> EndpointConfig:
     filename="raw_{game_id}_summary_details.json",
     output_dir=output_path,
     table_name="nhl_raw_all_games_summary_details",
-    load_mode='append'
+    is_overwrite=False
   )
 
 def get_all_club_stats_endpoint() -> EndpointConfig:
@@ -112,7 +112,7 @@ def get_all_club_stats_endpoint() -> EndpointConfig:
     filename="raw_stats_club_{team_id}_{season_id}_{game_type_id}.json",
     output_dir=output_path,
     table_name="nhl_raw_all_club_stats",
-    load_mode='append'
+    is_overwrite=False
   )
 
 def get_all_players_endpoint() -> EndpointConfig:
@@ -128,5 +128,37 @@ def get_all_players_endpoint() -> EndpointConfig:
     filename="player_{player_id}_info.json",
     output_dir=output_path,
     table_name="nhl_raw_all_players",
-    load_mode='append'
+    is_overwrite=False
+  )
+
+def get_all_players_gamelog_endpoint() -> EndpointConfig:
+  """
+  CONTEM DETALHES DOS JOGADORES
+  """
+
+  BASE_PATH = Path(get_base_path())
+  output_path = BASE_PATH / 'raw/nhl/raw_game_log'
+
+  return EndpointConfig(
+    url="https://api-web.nhle.com/v1/player/{player_id}/game-log/{season_id}/{game_type_id}",
+    filename="{player_id}_{season_id}_{game_type_id}.json",
+    output_dir=output_path,
+    table_name="nhl_raw_all_player_game_log",
+    is_overwrite=False
+  )
+
+def get_all_games_play_by_play_endpoint() -> EndpointConfig:
+  """
+  CONTEM DETALHES DOS JOGADORES
+  """
+
+  BASE_PATH = Path(get_base_path())
+  output_path = BASE_PATH / 'raw/nhl/raw_play_by_play'
+
+  return EndpointConfig(
+    url="https://api-web.nhle.com/v1/gamecenter/{game_id}/play-by-play",
+    filename="raw_{game_id}.json",
+    output_dir=output_path,
+    table_name="nhl_raw_all_play_by_play",
+    is_overwrite=False
   )

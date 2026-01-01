@@ -2,7 +2,7 @@ import pandas as pd
 import sqlalchemy
 from pathlib import Path
 from typing import List, Optional
-import csv
+
 
 def get_data_from_db(
     engine: sqlalchemy.Engine,
@@ -11,23 +11,37 @@ def get_data_from_db(
     schema: str = "staging",
     output_csv: Optional[Path] = None,
     return_as: str = "list",  # "list", "tuples", "df"
+    bool_filter: Optional[tuple[str, bool]] = None,  # ("is_fully_synced", True)
 ):
-    df = pd.read_sql_table(
-        table_name=table,
-        con=engine,
-        schema=schema,
-        columns=cols
-    )
+    # -----------------------------
+    # Monta query
+    # -----------------------------
+    columns_sql = ", ".join(cols)
+    sql = f"SELECT {columns_sql} FROM {schema}.{table}"
 
+    if bool_filter:
+        col, value = bool_filter
+        sql += f" WHERE {col} IS {'TRUE' if value else 'FALSE'}"
+
+    # -----------------------------
+    # Executa query
+    # -----------------------------
+    df = pd.read_sql(sql, con=engine)
+
+    # Garante unicidade
     df = df.drop_duplicates(subset=cols)
 
+    # -----------------------------
     # Salva CSV se solicitado
+    # -----------------------------
     if output_csv:
         output_csv = Path(output_csv)
         output_csv.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(output_csv, index=False)
 
-    # Retorno controlado
+    # -----------------------------
+    # Retornos
+    # -----------------------------
     if return_as == "df":
         return df
 
@@ -40,19 +54,3 @@ def get_data_from_db(
         return list(df.itertuples(index=False, name=None))
 
     raise ValueError("return_as must be: 'list', 'tuples', or 'df'")
-
-
-def open_csv(filepath: str | Path) -> list:
-    filepath = Path(filepath)
-
-    with filepath.open("r", newline="", encoding="utf-8") as f:
-        reader = csv.reader(f)
-        next(reader)  # pula header
-        return [row[0] for row in reader]
-
-
-# if __name__ == '__main__':
-#   engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
-#   output = './data/new_for_game_details.csv'
-#   pass
-  
