@@ -54,6 +54,6 @@ def get_all_teams_id():
     loader.load(config)
 
 if __name__ == "__main__":
-    get_all_seasons_id()
-    get_all_teams_id()
+    # get_all_seasons_id()
+    # get_all_teams_id()
     get_all_games_id()

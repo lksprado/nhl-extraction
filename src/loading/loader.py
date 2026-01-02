@@ -201,7 +201,8 @@ class Loader:
         with self._get_connection() as conn, conn.cursor() as cur:
             self._ensure_table(config, cur)
             self._prepare_table(config, cur)
-            buffer = self._json_to_buffer(config.build_filepath(), config.array_key, config.filename)
+            filepath = Path(config.output_dir) / config.filename
+            buffer = self._json_to_buffer(filepath, config.array_key, config.filename)
 
             self._copy_payload(buffer, config, cur)
             conn.commit()

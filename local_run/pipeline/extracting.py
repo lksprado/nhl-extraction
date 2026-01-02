@@ -14,12 +14,12 @@ def all_games_details_extraction():
   CONTEM DETALHES DO JOGO COM JOGADORES
   """
   engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
-  table_name = 'vw_stg_gamesid_for_games_details_tb'
+  table_name = 'vw_stg_request_games_id'
   
   extractor = Extractor()
   
   config = get_all_games_details_endpoint()  
-  games = get_data_from_db(engine=engine,table=table_name, cols=['game_id'])
+  games = get_data_from_db(engine=engine,table=table_name, cols=['game_id'], bool_filter=('has_games_details', False))
   
   total = len(games)
   games_num = 1
@@ -27,9 +27,9 @@ def all_games_details_extraction():
   
   for game in games:
     print(f"Extração: {games_num} de {total}")
-    url = f"https://api-web.nhle.com/v1/gamecenter/{game}/boxscore"
+    url = config.url.format(game_id = game)
     data = extractor.make_request(url=url)
-    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.build_filename(game_id=game))
+    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.filename.format(game_id=game))
     games_num +=1
 
   print(f"Completed in {perf_counter() - start:2f}s")
@@ -41,10 +41,10 @@ def all_games_summary_details_extraction():
   extractor = Extractor()
   
   engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
-  table_name = 'vw_stg_gamesid_for_games_summary_details_tb'
+  table_name = 'vw_stg_request_games_id'
   
   config = get_all_games_summary_details_endpoint()
-  games = get_data_from_db(engine=engine,table=table_name, cols=['game_id'])
+  games = get_data_from_db(engine=engine,table=table_name, cols=['game_id'], bool_filter=('has_games_summary_details', False))
 
   total = len(games)
   games_num = 1
@@ -52,9 +52,9 @@ def all_games_summary_details_extraction():
   
   for game in games:
     print(f"Extração: {games_num} de {total}")
-    url = f"https://api-web.nhle.com/v1/gamecenter/{game}/right-rail"
+    url = config.url.format(game_id = game)
     data = extractor.make_request(url=url)
-    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.build_filename(game_id=game))
+    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.filename.format(game_id=game))
     games_num +=1
   
   print(f"Completed in {perf_counter() - start:2f}s")
@@ -66,7 +66,7 @@ def all_club_stats_extraction():
   extractor = Extractor()
   
   engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
-  table_name = 'vw_stg_team_season_game_type_id_for_club_stats_tb'
+  table_name = 'vw_stg_request_teams_seasons_gametypes_id'
   
   config = get_all_club_stats_endpoint()
   rows = get_data_from_db(engine=engine,table=table_name, cols=['team_id', 'season_id','game_type_id'], return_as= 'tuples')
@@ -80,7 +80,7 @@ def all_club_stats_extraction():
 
 
       
-      url = config.build_url(
+      url = config.url.format(
           team_id=team_id,
           season_id=season_id,
           game_type_id=game_type_id
@@ -88,7 +88,7 @@ def all_club_stats_extraction():
       
       data = extractor.make_request(url=url)
 
-      filename = config.build_filename(
+      filename = config.filename.format(
           team_id=team_id,
           season_id=season_id,
           game_type_id=game_type_id
@@ -109,7 +109,7 @@ def all_players_extraction():
   extractor = Extractor()
   
   engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:pg12345@localhost:5435/postgres')
-  table_name = 'vw_stg_player_id_for_player_info'
+  table_name = 'vw_stg_request_players_id'
   
   config = get_all_players_endpoint()
   players = get_data_from_db(engine=engine,table=table_name, cols=['player_id'])
@@ -122,7 +122,7 @@ def all_players_extraction():
     print(f"Extração: {players_num} de {total}")
     url = config.url.format(player_id=player)
     data = extractor.make_request(url=url)
-    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.build_filename(player_id=player))
+    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.filename.format(player_id=player))
     players_num +=1
   
   print(f"Completed in {perf_counter() - start:2f}s")
@@ -146,7 +146,7 @@ def all_games_gamelog_extraction():
       
       print(f"Extração: {i} de {total}")
 
-      url = config.build_url(
+      url = config.url.format(
           player_id=player_id,
           season_id=season_id,
           game_type_id=game_type_id
@@ -154,15 +154,17 @@ def all_games_gamelog_extraction():
       
       data = extractor.make_request(url=url)
 
-      filename = config.build_filename(
+      filename = config.filename.format(
           player_id=player_id,
           season_id=season_id,
           game_type_id=game_type_id
       )
 
+      output_dir = config.output_dir / str(season_id)
+
       extractor.save_json(
           data=data,
-          output_dir=config.output_dir,
+          output_dir=output_dir,
           filename=filename
       )
 
@@ -186,18 +188,19 @@ def all_games_play_by_play_extraction():
   
   for game in games:
     print(f"Extração: {games_num} de {total}")
-    url = f"https://api-web.nhle.com/v1/gamecenter/{game}/play-by-play"
+    url = config.url.format(game_id = game)
     data = extractor.make_request(url=url)
-    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.build_filename(game_id=game))
+    extractor.save_json(data=data, output_dir=config.output_dir, filename=config.filename.format(game_id=game))
     games_num +=1
   
   print(f"Completed in {perf_counter() - start:2f}s")
 
 
 if __name__ == '__main__':
-  # all_games_details_extraction()
-  # all_games_summary_details_extraction()
+  all_games_details_extraction()
+  all_games_summary_details_extraction()
+  all_club_stats_extraction()
   # all_players_extraction()
-  # all_gamelog_extraction()
-  # all_games_play_by_play_extraction()
+  all_games_gamelog_extraction()
+  all_games_play_by_play_extraction()
   pass

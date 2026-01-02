@@ -14,15 +14,7 @@ class EndpointConfig:
     schema: str = 'raw'
     array_key: Optional[str] = None 
 
-    def build_url(self, **kwargs) -> str:
-        return self.url.format(**kwargs)
 
-    def build_filename(self, **kwargs) -> str:
-        return self.filename.format(**kwargs)
-
-    def build_filepath(self, **kwargs) -> Path:
-        return self.output_dir / self.build_filename(**kwargs)
-      
 ## STATIC ################################################################################
 
 def get_all_seasons_id_endpoint() -> EndpointConfig:
@@ -112,7 +104,7 @@ def get_all_club_stats_endpoint() -> EndpointConfig:
     filename="raw_stats_club_{team_id}_{season_id}_{game_type_id}.json",
     output_dir=output_path,
     table_name="nhl_raw_all_club_stats",
-    is_overwrite=False
+    is_overwrite=True
   )
 
 def get_all_players_endpoint() -> EndpointConfig:
@@ -128,7 +120,7 @@ def get_all_players_endpoint() -> EndpointConfig:
     filename="player_{player_id}_info.json",
     output_dir=output_path,
     table_name="nhl_raw_all_players",
-    is_overwrite=False
+    is_overwrite=True
   )
 
 def get_all_players_gamelog_endpoint() -> EndpointConfig:
@@ -137,14 +129,14 @@ def get_all_players_gamelog_endpoint() -> EndpointConfig:
   """
 
   BASE_PATH = Path(get_base_path())
-  output_path = BASE_PATH / 'raw/nhl/raw_game_log'
+  output_dir = BASE_PATH / "raw/nhl/raw_game_log"
 
   return EndpointConfig(
     url="https://api-web.nhle.com/v1/player/{player_id}/game-log/{season_id}/{game_type_id}",
     filename="{player_id}_{season_id}_{game_type_id}.json",
-    output_dir=output_path,
+    output_dir=output_dir,
     table_name="nhl_raw_all_player_game_log",
-    is_overwrite=False
+    is_overwrite=True
   )
 
 def get_all_games_play_by_play_endpoint() -> EndpointConfig:
