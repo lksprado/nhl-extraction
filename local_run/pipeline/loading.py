@@ -16,7 +16,7 @@ def all_games_details_loading(*, test_mode: bool = False):
   
   loader = Loader(**creds)
   
-  files = list(config.output_dir.glob("raw_*_details.json"))
+  files = list(config.output_dir.glob(config.file_pattern))
 
   if test_mode:
       loader.logger.info("Running in TEST MODE")
@@ -33,7 +33,7 @@ def all_games_summary_details_loading(*, test_mode: bool = False):
   
   loader = Loader(**creds)
   
-  files = list(config.output_dir.glob("raw_*_summary_details.json"))
+  files = list(config.output_dir.glob(config.file_pattern))
   
   if test_mode:
       loader.logger.info("Running in TEST MODE")
@@ -50,7 +50,7 @@ def all_club_stats_loading(*, test_mode: bool = False):
   
   loader = Loader(**creds)
   
-  files = list(config.output_dir.glob("raw_stats_club_*_*_*.json"))
+  files = list(config.output_dir.glob(config.file_pattern))
   
   if test_mode:
       loader.logger.info("Running in TEST MODE")
@@ -67,7 +67,7 @@ def all_players_loading(*, test_mode: bool = False):
   
   loader = Loader(**creds)
   
-  files = list(config.output_dir.glob("player_*_info.json"))
+  files = list(config.output_dir.glob(config.file_pattern))
   
   if test_mode:
       loader.logger.info("Running in TEST MODE")
@@ -98,9 +98,7 @@ def all_games_gamelog_loading(*, seasons: list[str] | None = None, test_mode: bo
       latest = max(subdirs, key=lambda p: p.name)
       season_dirs = [latest]
 
-  files = []
-  for d in season_dirs:
-      files.extend(d.glob("*_*_*.json"))
+  files = config.collect_files(season_dirs)
   
   if test_mode:
       loader.logger.info("Running in TEST MODE")
@@ -117,7 +115,7 @@ def all_games_play_by_play_loading(*, test_mode: bool = False):
   
   loader = Loader(**creds)
   
-  files = list(config.output_dir.glob("*raw_*.json"))
+  files = list(config.output_dir.glob(config.file_pattern))
   
   if test_mode:
       loader.logger.info("Running in TEST MODE")

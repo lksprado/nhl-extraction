@@ -1,19 +1,28 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Literal
+from typing import Optional, Iterable
 from config import get_base_path
 
 @dataclass
 class EndpointConfig:
-    url: str
-    filename: str
-    output_dir: Path
-    table_name: str
-    is_overwrite: bool = False
-    schema: str = 'raw'
-    array_key: Optional[str] = None 
+  url: str
+  filename: str
+  output_dir: Path
+  table_name: str
+  is_overwrite: bool = False
+  search_recursive: bool = False
+  file_pattern: str = None
+  schema: str = 'raw'
+  array_key: Optional[str] = None 
 
+  def collect_files(self, subdirs: Iterable[Path] | None = None) -> list[Path]:
+      roots = list(subdirs) if subdirs else [self.output_dir]
+      pattern = self.file_pattern or "*"
+      files: list[Path] = []
+      for root in roots:
+          files.extend(root.rglob(pattern) if self.search_recursive else root.glob(pattern))
+      return files
 
 ## STATIC ################################################################################
 
@@ -72,6 +81,7 @@ def get_all_games_details_endpoint() -> EndpointConfig:
     filename="raw_{game_id}_details.json",
     output_dir=output_path,
     table_name="nhl_raw_all_games_details",
+    file_pattern="raw_*_details.json",
     is_overwrite=False
   )
 
@@ -88,6 +98,7 @@ def get_all_games_summary_details_endpoint() -> EndpointConfig:
     filename="raw_{game_id}_summary_details.json",
     output_dir=output_path,
     table_name="nhl_raw_all_games_summary_details",
+    file_pattern="raw_*_summary_details.json",
     is_overwrite=False
   )
 
@@ -104,6 +115,7 @@ def get_all_club_stats_endpoint() -> EndpointConfig:
     filename="raw_stats_club_{team_id}_{season_id}_{game_type_id}.json",
     output_dir=output_path,
     table_name="nhl_raw_all_club_stats",
+    file_pattern="raw_stats_club_*_*_*.json",
     is_overwrite=True
   )
 
@@ -120,6 +132,7 @@ def get_all_players_endpoint() -> EndpointConfig:
     filename="player_{player_id}_info.json",
     output_dir=output_path,
     table_name="nhl_raw_all_players",
+    file_pattern="player_*_info.json",
     is_overwrite=True
   )
 
@@ -136,6 +149,8 @@ def get_all_players_gamelog_endpoint() -> EndpointConfig:
     filename="{player_id}_{season_id}_{game_type_id}.json",
     output_dir=output_dir,
     table_name="nhl_raw_all_player_game_log",
+    file_pattern="*_*_*.json",
+    search_recursive=True,
     is_overwrite=True
   )
 
@@ -152,5 +167,6 @@ def get_all_games_play_by_play_endpoint() -> EndpointConfig:
     filename="raw_{game_id}.json",
     output_dir=output_path,
     table_name="nhl_raw_all_play_by_play",
+    file_pattern="raw_*.json",
     is_overwrite=False
   )
