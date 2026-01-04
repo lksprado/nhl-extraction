@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Iterable
-from config import get_base_path
+from .config import get_base_path
 
 @dataclass
 class EndpointConfig:

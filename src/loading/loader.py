@@ -4,19 +4,18 @@ import psycopg2
 from psycopg2.extensions import connection as PGConn 
 from pathlib import Path
 from typing import Iterable, Callable, Optional
-from endpoints import EndpointConfig
+from ...endpoints import EndpointConfig
 import logging
 
 
 class Loader:
     def __init__(
         self,
-        *,
-        host: str,
-        port: int,
-        dbname: str,
-        user: str,
-        password: str,
+        host: str = None,
+        port: int = None,
+        dbname: str = None,
+        user: str = None,
+        password: str = None,
         connection_provider: Optional[Callable[[], PGConn]] = None,
     ):
         self._connection_provider = connection_provider
