@@ -3,7 +3,7 @@ def get_base_path():
         # Tenta pegar a variável do Airflow
         from airflow.models import Variable
 
-        return Variable.get("MYLAKE_BASEPATH")
+        return Variable.get("lake_base_dir")
     except Exception:
         # Se falhar, assume path local (está fora do Airflow)
         return "/media/lucas/Files/2.Projetos/0.mylake/"
