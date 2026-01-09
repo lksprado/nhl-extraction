@@ -1,18 +1,22 @@
 import pandas as pd
 import sqlalchemy
 from pathlib import Path
-from typing import List, Optional
-
+from typing import List, Optional, Callable
+from psycopg2.extensions import connection as PGConn
 
 def get_data_from_db(
-    engine: sqlalchemy.Engine,
     table: str,
     cols: List[str],
     schema: str = "staging",
     output_csv: Optional[Path] = None,
     return_as: str = "list",  # "list", "tuples", "df"
     bool_filter: Optional[tuple[str, bool]] = None,  # ("is_fully_synced", True)
+    connection_provider: Optional[Callable[[], PGConn]] = None,
+    engine: Optional[sqlalchemy.engine] = None,
 ):
+
+    if not connection_provider and not engine:
+        raise ValueError("Deve fornecer 'connection_provider' ou 'engine'")
     # -----------------------------
     # Monta query
     # -----------------------------
@@ -26,9 +30,15 @@ def get_data_from_db(
     # -----------------------------
     # Executa query
     # -----------------------------
-    df = pd.read_sql(sql, con=engine)
-
-    # Garante unicidade
+    if connection_provider:
+        # Usa connection_provider (psycopg2)
+        conn = connection_provider()
+        df = pd.read_sql(sql, con=conn)
+        # Nota: não fechamos a conexão aqui, quem forneceu é responsável
+    else:
+        # Usa engine (SQLAlchemy)
+        df = pd.read_sql(sql, con=engine)
+    
     df = df.drop_duplicates(subset=cols)
 
     # -----------------------------
